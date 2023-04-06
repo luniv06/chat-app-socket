@@ -1,0 +1,4 @@
+echo g++ -g -Wall -I /home/hscuser/asio-1.22.1/include -o server echo_server_iterative.cpp -lpthread
+g++ -g -Wall -I /home/hscuser/asio-1.22.1/include -o server echo_server_iterative.cpp -lpthread
+echo g++ -g -Wall -I /home/hscuser/asio-1.22.1/include -o conc_server echo_server_concurrent.cpp -lpthread
+g++ -g -Wall -I /home/hscuser/asio-1.22.1/include -o conc_server echo_server_concurrent.cpp -lpthread

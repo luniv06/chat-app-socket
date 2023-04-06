@@ -1,0 +1,1 @@
+g++ -g -Wall -I /home/vinul/task_tracker/asio-1.26.0/include -o server_exec  ./server/server_main.cpp -lpthread

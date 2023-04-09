@@ -1,1 +1,1 @@
-g++ -g -Wall -o client_exec -I /home/vinul/task_tracker/asio-1.26.0/include ./client/client_main.cpp  -lpthread
+g++ -g -Wall -o client_exec -I /home/hscuser/c++_project/chat-app-socket/asio-1.26.0/include ./client/client_temp.cpp  -lpthread

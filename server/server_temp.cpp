@@ -29,7 +29,6 @@ mutex cout_mtx, clients_mtx;
 void set_name(int id, char name[]);
 void shared_print(string str, bool endLine);
 int broadcast_message(string message, int sender_id);
-int broadcast_message(int num, int sender_id);
 void end_connection(int id);
 void handle_client(int client_socket, int id);
 
@@ -44,7 +43,7 @@ int main()
 
     struct sockaddr_in server;
     server.sin_family = AF_INET;
-    server.sin_port = htons(32003);
+    server.sin_port = htons(32006);
     server.sin_addr.s_addr = INADDR_ANY;
     bzero(&server.sin_zero, 0);
 
@@ -129,18 +128,6 @@ int broadcast_message(string message, int sender_id)
     }
 }
 
-// Broadcast a number to all clients except the sender
-int broadcast_message(int num, int sender_id)
-{
-    for (int i = 0; i < clients.size(); i++)
-    {
-        if (clients[i].id != sender_id)
-        {
-            send(clients[i].socket, &num, sizeof(num), 0);
-        }
-    }
-}
-
 void end_connection(int id)
 {
     for (int i = 0; i < clients.size(); i++)
@@ -165,7 +152,6 @@ void handle_client(int client_socket, int id)
     // Display welcome message
     string welcome_message = string(name) + string(" has joined");
     broadcast_message("#NULL", id);
-    broadcast_message(id, id);
     broadcast_message(welcome_message, id);
     shared_print(welcome_message);
 
@@ -179,14 +165,12 @@ void handle_client(int client_socket, int id)
             // Display leaving message
             string message = string(name) + string(" has left");
             broadcast_message("#NULL", id);
-            broadcast_message(id, id);
             broadcast_message(message, id);
             shared_print(message);
             end_connection(id);
             return;
         }
         broadcast_message(string(name), id);
-        broadcast_message(id, id);
         broadcast_message(string(str), id);
         shared_print(string(name) + " : " + string(str));
     }

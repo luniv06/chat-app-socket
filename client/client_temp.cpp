@@ -92,7 +92,7 @@ void send_msg(int socket_id)
     char msg[MAX_LEN];
     cin.getline(msg, MAX_LEN);
     send(socket_id, msg, sizeof(msg), 0);
-    if (strcmp(msg, "#exit") == 0)
+    if (strcmp(msg, "/exit") == 0)
     {
         check_exit = true;
         close(socket_id);
@@ -112,7 +112,7 @@ void receive_msg(int socket_id)
         return;
     recv(socket_id, msg, sizeof(msg), 0);
     remove_text(6);
-    if (strcmp(name, "#NULL") != 0)
+    if (strcmp(name, "user") != 0)
         cout << name << " : " << msg << endl;
     else
         cout << msg << endl;

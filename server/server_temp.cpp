@@ -10,168 +10,148 @@
 #include <mutex>
 #include <iostream>
 #include <asio.hpp>
-#define MAX_LEN 200
+
+const int MAX_LEN = 200;
 
 using namespace std;
 using asio::ip::tcp;
 
-struct terminal
+class user_info
 {
-    int id;
-    string name;
-    int socket;
+public:
+    int userid;
+    string username;
+    int sockfd;
     thread th;
 };
 
-vector<terminal> clients;
-int seed = 0;
-mutex cout_mtx, clients_mtx;
-void set_name(int id, char name[]);
-void shared_print(string str, bool endLine);
-int broadcast_message(string message, int sender_id);
-void end_connection(int id);
-void handle_client(int client_socket, int id);
+vector<user_info> users;
+int uid = 0;
+mutex mtx_ostream, mtx_users;
+
+void print_for_all(string str, bool endLine);
+int send_msg(string message, int sender_id);
+void client_handler(int sockfd, int user_id);
 
 int main()
 {
-    int server_socket;
-    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        perror("socket: ");
-        exit(-1);
-    }
-
+    int socket_id = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server;
     server.sin_family = AF_INET;
     server.sin_port = htons(32006);
     server.sin_addr.s_addr = INADDR_ANY;
     bzero(&server.sin_zero, 0);
-
-    if ((bind(server_socket, (struct sockaddr *)&server, sizeof(struct sockaddr_in))) == -1)
+    bind(socket_id, (struct sockaddr *)&server, sizeof(struct sockaddr_in));
+    int check = listen(socket_id, 8);
+    if (check < 0)
     {
-        perror("bind error: ");
-        exit(-1);
-    }
-
-    if ((listen(server_socket, 8)) == -1)
-    {
-        perror("listen error: ");
-        exit(-1);
+        cout << "error: listen()" << endl;
+        exit(1);
     }
 
     struct sockaddr_in client;
-    int client_socket;
     unsigned int len = sizeof(sockaddr_in);
+    cout << "\n\t  ***** Chat-Room server log *****   " << endl;
 
-    // asio::io_context io_context;
-    // asio::error_code error;
-    // tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 30005));
-    // tcp::socket socket(io_context);
-    // int server_socket = socket.native_handle();
-    cout << "\n\t  ====== Welcome to the chat-room ======   " << endl;
-
-    while (1)
+    for (;;)
     {
-        if ((client_socket = accept(server_socket, (struct sockaddr *)&client, &len)) == -1)
+        int client_socket = accept(socket_id, (struct sockaddr *)&client, &len);
+        if (client_socket < 0)
         {
-            perror("accept error: ");
-            exit(-1);
+            cout << "error: accept()" << endl;
+            exit(1);
         }
-        seed++;
-        thread t(handle_client, client_socket, seed);
-        lock_guard<mutex> guard(clients_mtx);
-        clients.push_back({seed, string("Anonymous"), client_socket, (move(t))});
+        uid++;
+        thread th(client_handler, client_socket, uid);
+        lock_guard<mutex> guard(mtx_users);
+        users.push_back({uid, string("client"), client_socket, (move(th))});
     }
 
-    for (int i = 0; i < clients.size(); i++)
+    for (int i = 0; i < users.size(); i++)
     {
-        if (clients[i].th.joinable())
-            clients[i].th.join();
+        if (users[i].th.joinable())
+            users[i].th.join();
     }
 
-    close(server_socket);
+    close(socket_id);
     return 0;
 }
 
-// Set name of client
-void set_name(int id, char name[])
+void client_handler(int sockfd, int user_id)
 {
-    for (int i = 0; i < clients.size(); i++)
+    char name[MAX_LEN], msg[MAX_LEN];
+    recv(sockfd, name, sizeof(name), 0);
+
+    // setting name of the client
+    for (int i = 0; i < users.size(); i++)
     {
-        if (clients[i].id == id)
+        if (users[i].userid == user_id)
         {
-            clients[i].name = string(name);
+            users[i].username = string(name);
         }
+    }
+
+    // displaying welcome message
+    string welcome = string(name) + string(" has joined");
+    send_msg("user", user_id);
+    send_msg(welcome, user_id);
+    print_for_all(welcome);
+
+    for (;;)
+    {
+        int len = recv(sockfd, msg, sizeof(msg), 0);
+        if (len <= 0)
+        {
+            return;
+        }
+        if (strcmp(msg, "/exit") == 0)
+        {
+            // displaying leaving message
+            string leave = string(name) + string(" has left");
+            send_msg("user", user_id);
+            send_msg(leave, user_id);
+            print_for_all(leave);
+            for (int i = 0; i < users.size(); i++)
+            {
+                if (users[i].userid == user_id)
+                {
+                    lock_guard<mutex> guard(mtx_users);
+                    users[i].th.detach();
+                    users.erase(users.begin() + i);
+                    close(users[i].sockfd);
+                    break;
+                }
+            }
+            return;
+        }
+        send_msg(string(name), user_id);
+        send_msg(string(msg), user_id);
+        string message = string(name) + " : " + string(msg);
+        print_for_all(message);
     }
 }
 
-// For synchronisation of cout statements
-void shared_print(string str, bool endLine = true)
+// print common message for all
+void print_for_all(string str, bool endLine = true)
 {
-    lock_guard<mutex> guard(cout_mtx);
+    lock_guard<mutex> guard(mtx_ostream);
     cout << str;
     if (endLine)
+    {
         cout << endl;
-}
-
-// Broadcast message to all clients except the sender
-int broadcast_message(string message, int sender_id)
-{
-    char temp[MAX_LEN];
-    strcpy(temp, message.c_str());
-    for (int i = 0; i < clients.size(); i++)
-    {
-        if (clients[i].id != sender_id)
-        {
-            send(clients[i].socket, temp, sizeof(temp), 0);
-        }
     }
 }
 
-void end_connection(int id)
+// send the message to all clients except the sender
+int send_msg(string message, int user_id)
 {
-    for (int i = 0; i < clients.size(); i++)
+    char msg[MAX_LEN];
+    strcpy(msg, message.c_str());
+    for (int i = 0; i < users.size(); i++)
     {
-        if (clients[i].id == id)
+        if (users[i].userid != user_id)
         {
-            lock_guard<mutex> guard(clients_mtx);
-            clients[i].th.detach();
-            clients.erase(clients.begin() + i);
-            close(clients[i].socket);
-            break;
+            send(users[i].sockfd, msg, sizeof(msg), 0);
         }
-    }
-}
-
-void handle_client(int client_socket, int id)
-{
-    char name[MAX_LEN], str[MAX_LEN];
-    recv(client_socket, name, sizeof(name), 0);
-    set_name(id, name);
-
-    // Display welcome message
-    string welcome_message = string(name) + string(" has joined");
-    broadcast_message("#NULL", id);
-    broadcast_message(welcome_message, id);
-    shared_print(welcome_message);
-
-    while (1)
-    {
-        int bytes_received = recv(client_socket, str, sizeof(str), 0);
-        if (bytes_received <= 0)
-            return;
-        if (strcmp(str, "#exit") == 0)
-        {
-            // Display leaving message
-            string message = string(name) + string(" has left");
-            broadcast_message("#NULL", id);
-            broadcast_message(message, id);
-            shared_print(message);
-            end_connection(id);
-            return;
-        }
-        broadcast_message(string(name), id);
-        broadcast_message(string(str), id);
-        shared_print(string(name) + " : " + string(str));
     }
 }

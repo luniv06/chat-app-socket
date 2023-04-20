@@ -1,3 +1,4 @@
+#include <iostream>
 #include <bits/stdc++.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -11,6 +12,7 @@
 #include <mutex>
 #include <netinet/ip.h>
 #include <asio.hpp>
+#include <string>
 #define MAX_LEN 200
 
 using namespace std;
@@ -19,19 +21,19 @@ using asio::ip::tcp;
 bool check_exit = false;
 int socket_id;
 
-int remove_text(int count);
+void remove_text(int count);
 void send_msg(int socket_id);
 void receive_msg(int socket_id);
 
-int main(int argc, char *argv[])
+int main()
 {
-    if (argc != 3)
-    {
-        std::cerr << "Usage: client <host> <port>" << endl;
-    }
+    int portNo;
+    cout << "Enter port : ";
+    cin >> portNo;
+    
     asio::io_context io_context;
     tcp::resolver resolver(io_context);
-    tcp::resolver::results_type endpoints = resolver.resolve(argv[1], argv[2]);
+    tcp::resolver::results_type endpoints = resolver.resolve("localhost", to_string(portNo));
     tcp::socket socket(io_context);
     asio::connect(socket, endpoints);
 
@@ -41,6 +43,7 @@ int main(int argc, char *argv[])
 
     char name[MAX_LEN];
     cout << "Enter username : ";
+    cin.ignore();
     cin.getline(name, MAX_LEN);
     send(socket_id, name, sizeof(name), 0);
 
@@ -76,7 +79,7 @@ int main(int argc, char *argv[])
 }
 
 // remove text from terminal
-int remove_text(int count)
+void remove_text(int count)
 {
     char back_space = 8;
     for (int i = 0; i < count; i++)
@@ -88,7 +91,7 @@ int remove_text(int count)
 // send message to all participants
 void send_msg(int socket_id)
 {
-    cout << "You : ";
+    // cout << "You : ";
     char msg[MAX_LEN];
     cin.getline(msg, MAX_LEN);
     send(socket_id, msg, sizeof(msg), 0);

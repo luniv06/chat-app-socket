@@ -1,1 +1,0 @@
-g++ -g -Wall -I /home/hscuser/c++_project/chat-app-socket/asio-1.26.0/include -o server_exec  ./server/server_temp.cpp -lpthread

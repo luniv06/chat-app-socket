@@ -31,7 +31,7 @@ int uid = 0;
 mutex mtx_ostream, mtx_users;
 
 void print_for_all(string str, bool endLine);
-int send_msg(string message, int sender_id);
+void send_msg(string message, int sender_id);
 void client_handler(int sockfd, int user_id);
 
 int main()
@@ -72,7 +72,7 @@ int main()
         users.push_back({uid, string("client"), client_socket, (move(th))});
     }
 
-    for (int i = 0; i < users.size(); i++)
+    for (vector<user_info>::size_type i = 0; i < users.size(); i++)
     {
         if (users[i].th.joinable())
             users[i].th.join();
@@ -88,7 +88,7 @@ void client_handler(int sockfd, int user_id)
     recv(sockfd, name, sizeof(name), 0);
 
     // setting name of the client
-    for (int i = 0; i < users.size(); i++)
+    for (vector<user_info>::size_type i = 0; i < users.size(); i++)
     {
         if (users[i].userid == user_id)
         {
@@ -116,7 +116,7 @@ void client_handler(int sockfd, int user_id)
             send_msg("user", user_id);
             send_msg(leave, user_id);
             print_for_all(leave, true);
-            for (int i = 0; i < users.size(); i++)
+            for (vector<user_info>::size_type i = 0; i < users.size(); i++)
             {
                 if (users[i].userid == user_id)
                 {
@@ -148,11 +148,11 @@ void print_for_all(string str, bool endLine)
 }
 
 // send the message to all clients except the sender
-int send_msg(string message, int user_id)
+void send_msg(string message, int user_id)
 {
     char msg[MAX_LEN];
     strcpy(msg, message.c_str());
-    for (int i = 0; i < users.size(); i++)
+    for (vector<user_info>::size_type i = 0; i < users.size(); i++)
     {
         if (users[i].userid != user_id)
         {

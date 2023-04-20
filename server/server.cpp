@@ -1,3 +1,4 @@
+#include <iostream>
 #include <bits/stdc++.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -35,10 +36,14 @@ void client_handler(int sockfd, int user_id);
 
 int main()
 {
+    int portNo;
+    cout << "Enter port no: ";
+    cin >> portNo;
+
     int socket_id = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server;
     server.sin_family = AF_INET;
-    server.sin_port = htons(32006);
+    server.sin_port = htons(portNo);
     server.sin_addr.s_addr = INADDR_ANY;
     bzero(&server.sin_zero, 0);
     bind(socket_id, (struct sockaddr *)&server, sizeof(struct sockaddr_in));
@@ -95,7 +100,7 @@ void client_handler(int sockfd, int user_id)
     string welcome = string(name) + string(" has joined");
     send_msg("user", user_id);
     send_msg(welcome, user_id);
-    print_for_all(welcome);
+    print_for_all(welcome, true);
 
     for (;;)
     {
@@ -110,7 +115,7 @@ void client_handler(int sockfd, int user_id)
             string leave = string(name) + string(" has left");
             send_msg("user", user_id);
             send_msg(leave, user_id);
-            print_for_all(leave);
+            print_for_all(leave, true);
             for (int i = 0; i < users.size(); i++)
             {
                 if (users[i].userid == user_id)
@@ -127,12 +132,12 @@ void client_handler(int sockfd, int user_id)
         send_msg(string(name), user_id);
         send_msg(string(msg), user_id);
         string message = string(name) + " : " + string(msg);
-        print_for_all(message);
+        print_for_all(message, true);
     }
 }
 
 // print common message for all
-void print_for_all(string str, bool endLine = true)
+void print_for_all(string str, bool endLine)
 {
     lock_guard<mutex> guard(mtx_ostream);
     cout << str;

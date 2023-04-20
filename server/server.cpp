@@ -1,22 +1,12 @@
-#include <iostream>
 #include <bits/stdc++.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <errno.h>
-#include <string.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <thread>
 #include <mutex>
-#include <iostream>
-#include <asio.hpp>
-
-const int MAX_LEN = 200;
 
 using namespace std;
-using asio::ip::tcp;
-
 class user_info
 {
 public:
@@ -26,6 +16,7 @@ public:
     thread th;
 };
 
+const int MAX_LEN = 400;
 vector<user_info> users;
 int uid = 0;
 mutex mtx_ostream, mtx_users;
@@ -75,7 +66,9 @@ int main()
     for (vector<user_info>::size_type i = 0; i < users.size(); i++)
     {
         if (users[i].th.joinable())
+        {
             users[i].th.join();
+        }
     }
 
     close(socket_id);

@@ -1,23 +1,10 @@
-#include <iostream>
 #include <bits/stdc++.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <thread>
-#include <signal.h>
-#include <mutex>
-#include <netinet/ip.h>
 #include <asio.hpp>
-#include <string>
-#define MAX_LEN 200
 
 using namespace std;
 using asio::ip::tcp;
 
+const int MAX_LEN = 400;
 bool check_exit = false;
 int socket_id;
 
@@ -30,7 +17,7 @@ int main()
     int portNo;
     cout << "Enter port : ";
     cin >> portNo;
-    
+
     asio::io_context io_context;
     tcp::resolver resolver(io_context);
     tcp::resolver::results_type endpoints = resolver.resolve("localhost", to_string(portNo));
@@ -66,6 +53,7 @@ int main()
         if (FD_ISSET(0, &read_fds))
         {
             // read data on stdin
+            //        cout << "You : ";
             send_msg(socket_id);
         }
 
@@ -91,7 +79,7 @@ void remove_text(int count)
 // send message to all participants
 void send_msg(int socket_id)
 {
-    // cout << "You : ";
+    cout << "You : ";
     char msg[MAX_LEN];
     cin.getline(msg, MAX_LEN);
     send(socket_id, msg, sizeof(msg), 0);
@@ -108,17 +96,25 @@ void receive_msg(int socket_id)
 {
 
     if (check_exit)
+    {
         return;
+    }
     char name[MAX_LEN], msg[MAX_LEN];
     int bytes_received = recv(socket_id, name, sizeof(name), 0);
     if (bytes_received <= 0)
+    {
         return;
+    }
     recv(socket_id, msg, sizeof(msg), 0);
     remove_text(6);
     if (strcmp(name, "user") != 0)
+    {
         cout << name << " : " << msg << endl;
+    }
     else
+    {
         cout << msg << endl;
+    }
     cout << "You : ";
     fflush(stdout);
 }

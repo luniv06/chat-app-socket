@@ -1,5 +1,5 @@
 #include <bits/stdc++.h>
-#include <sys/types.h>
+// #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -17,6 +17,7 @@ public:
 };
 
 const int MAX_LEN = 400;
+const int QUEUE_LEN = 10;
 vector<user_info> users;
 int uid = 0;
 mutex mtx_ostream, mtx_users;
@@ -38,7 +39,7 @@ int main()
     server.sin_addr.s_addr = INADDR_ANY;
     bzero(&server.sin_zero, 0);
     bind(socket_id, (struct sockaddr *)&server, sizeof(struct sockaddr_in));
-    int check = listen(socket_id, 8);
+    int check = listen(socket_id, QUEUE_LEN);
     if (check < 0)
     {
         cout << "error: listen()" << endl;
@@ -115,11 +116,12 @@ void client_handler(int sockfd, int user_id)
                 {
                     lock_guard<mutex> guard(mtx_users);
                     users[i].th.detach();
-                    users.erase(users.begin() + i);
                     close(users[i].sockfd);
+                    users.erase(users.begin() + i);
                     break;
                 }
             }
+            // exit(0);
             return;
         }
         send_msg(string(name), user_id);

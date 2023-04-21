@@ -6,7 +6,6 @@ using asio::ip::tcp;
 
 const int MAX_LEN = 400;
 bool check_exit = false;
-int socket_id;
 
 void remove_text(int count);
 void send_msg(int socket_id);
@@ -97,7 +96,8 @@ void receive_msg(int socket_id)
 
     if (check_exit)
     {
-        return;
+        exit(0);
+        // return;
     }
     char name[MAX_LEN], msg[MAX_LEN];
     int bytes_received = recv(socket_id, name, sizeof(name), 0);
